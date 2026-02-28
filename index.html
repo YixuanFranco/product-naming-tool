@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="🏺 商品拍照命名助手 - 基于 AI 的电商重命名与话术生成工具。支持一键识别及 ZIP 打包。">
+    <meta name="keywords" content="AI, 电商, 商品命名, 直播话术, 自动重命名">
+    <title>🏺 商品拍照命名助手 v2.0 - 您的 AI 智能仓库管理员</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            --accent-color: #667eea;
+            --success-color: #52c41a;
+            --text-dark: #2d3436;
+            --text-light: #636e72;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-dark);
+        }
+
+        .main-wrapper {
+            flex: 1;
+            padding: 40px 20px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 38px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            opacity: 0.85;
+            font-size: 16px;
+            font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .btn-toggle-config {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid white;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn-toggle-config:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .config-panel {
+            background: #f8f9fa;
+            border-bottom: 2px solid #667eea;
+            padding: 30px;
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-10px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .config-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #764ba2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .config-item {
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+
+        .config-item label {
+            display: block;
+            font-size: 14px;
+            color: #444;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .config-item input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .step {
+            margin-bottom: 50px;
+        }
+
+        .step-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            margin-right: 12px;
+            font-size: 16px;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .upload-box {
+            border: 2px dashed #ccd0d5;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fdfdfd;
+            height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .upload-box:hover {
+            border-color: #667eea;
+            background: #f7f9ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-box.has-image {
+            border-color: #52c41a;
+            background: #f6ffed;
+        }
+
+        .upload-icon {
+            font-size: 44px;
+            margin-bottom: 12px;
+            filter: grayscale(1);
+            opacity: 0.6;
+        }
+
+        .upload-label {
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 6px;
+            font-size: 16px;
+        }
+
+        .upload-hint {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .upload-preview {
+            width: 100%;
+            height: 140px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #52c41a;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .ai-section {
+            background: #f9faff;
+            border: 2px solid #e1e4ff;
+            border-radius: 12px;
+            padding: 40px;
+        }
+
+        .ai-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .ai-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .ai-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .ai-result {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 30px;
+            border: 1px solid #eee;
+        }
+
+        .ai-result-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 18px;
+            transition: all 0.3s;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .live-script-box {
+            background: #fffef6;
+            border: 1px solid #ffe58f;
+            border-radius: 10px;
+            padding: 24px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-size: 15px;
+            line-height: 1.8;
+            color: #614d0c;
+            max-height: 400px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .copy-btn {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #40a9ff;
+        }
+
+        .id-input-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .id-prefix {
+            font-size: 22px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .id-input {
+            width: 120px;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 20px;
+            text-align: center;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .preview-section {
+            background: #f8f9fb;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #edf0f2;
+        }
+
+        .preview-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .preview-item {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            color: #333;
+            border-left: 5px solid #52c41a;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            display: flex;
+            align-items: center;
+        }
+
+        .preview-item::before {
+            content: "📄";
+            margin-right: 12px;
+        }
+
+        .download-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .download-btn {
+            padding: 16px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .download-btn.primary {
+            background: #52c41a;
+            color: white;
+            box-shadow: 0 4px 10px rgba(82, 196, 26, 0.2);
+        }
+
+        .download-btn.primary:hover:not(:disabled) {
+            background: #73d13d;
+            transform: translateY(-2px);
+        }
+
+        .download-btn.secondary {
+            background: #f0f2f5;
+            color: #5c6b77;
+        }
+
+        .download-btn.secondary:hover {
+            background: #e6e9ed;
+        }
+
+        .loading {
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hint {
+            background: #fffbe6;
+            border-left: 4px solid #faad14;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #856404;
+            margin-top: 15px;
+        }
+
+        .help-btn {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .help-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        #preview-list {
+            list-style: none;
+        }
+
+        .browser-warning {
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            color: #ff4d4f;
+            font-size: 14px;
+            line-height: 1.6;
+            display: none;
+            border-left: 5px solid #ff4d4f;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+
+<body>
+    <div class="main-wrapper">
+        <div class="container">
+            <div class="header">
+                <button class="help-btn" onclick="showHelp()">?</button>
+                <h1>🏺 商品拍照命名助手 v2.0</h1>
+                <p>AI智能识别，一键生成重命名方案与直播脚本</p>
+                <button class="btn-toggle-config" onclick="toggleConfig()">⚙️ API 配置</button>
+            </div>
+
+            <div id="config-panel" class="config-panel">
+                <div class="config-title">
+                    <span>火山方舟（豆包）配置</span>
+                    <button onclick="toggleConfig()"
+                        style="border:none;background:none;cursor:pointer;font-size:24px;">✕</button>
+                </div>
+                <div class="config-item">
+                    <label>API Key (从火山引擎获取)</label>
+                    <input type="password" id="api-key" placeholder="例如: 8e5xxxx-xxxx-xxxx">
+                </div>
+                <div class="config-item">
+                    <label>推理接入点 ID (Endpoint ID)</label>
+                    <input type="text" id="endpoint-id" placeholder="例如: ep-2024xxxxxx-xxxxx">
+                </div>
+                <p style="font-size: 13px; color: #666; line-height: 1.5;">💡
+                    配置将保存在浏览器本地。若识别失败，通常是由于浏览器跨域拦截（CORS），建议通过本地服务器运行或安装 CORS 插件。
+                </p>
+            </div>
+
+            <div class="content">
+                <div class="step">
+                    <div class="step-title"><span class="step-number">1</span>上传商品照片（5张）</div>
+                    <div class="upload-grid">
+                        <div class="upload-box" id="box-0" onclick="document.getElementById('file-0').click()">
+                            <input type="file" id="file-0" accept="image/*"
+                                onchange="handleFileSelect(0, this.files[0])">
+                            <div class="upload-icon">📸</div>
+                            <div class="upload-label">正面</div>
+                            <div class="upload-hint">点击上传</div>
+                        </div>
+                        <div class="upload-box" id="box-1" onclick="document.getElementById('file-1').click()">
+                            <input type="file" id="file-1" accept="image/*"
+                                onchange="handleFileSelect(1, this.files[0])">
+                            <div class="upload-icon">📸</div>
+                            <div class="upload-label">背面</div>
+                            <div class="upload-hint">点击上传</div>
+                        </div>
+                        <div class="upload-box" id="box-2" onclick="document.getElementById('file-2').click()">
+                            <input type="file" id="file-2" accept="image/*"
+                                onchange="handleFileSelect(2, this.files[0])">
+                            <div class="upload-icon">📸</div>
+                            <div class="upload-label">底部</div>
+                            <div class="upload-hint">点击上传</div>
+                        </div>
+                        <div class="upload-box" id="box-3" onclick="document.getElementById('file-3').click()">
+                            <input type="file" id="file-3" accept="image/*"
+                                onchange="handleFileSelect(3, this.files[0])">
+                            <div class="upload-icon">📸</div>
+                            <div class="upload-label">克重</div>
+                            <div class="upload-hint">点击上传</div>
+                        </div>
+                        <div class="upload-box" id="box-4" onclick="document.getElementById('file-4').click()">
+                            <input type="file" id="file-4" accept="image/*"
+                                onchange="handleFileSelect(4, this.files[0])">
+                            <div class="upload-icon">📸</div>
+                            <div class="upload-label">长度</div>
+                            <div class="upload-hint">点击上传</div>
+                        </div>
+                    </div>
+                    <div class="hint">💡 提示：AI 将优先分析「正面、背面、底部」三张图</div>
+                </div>
+
+                <div class="step">
+                    <div class="step-title"><span class="step-number">2</span>AI 智能识别</div>
+                    <div class="ai-section">
+                        <div id="browser-warning" class="browser-warning"></div>
+                        <button class="ai-button" id="ai-btn" onclick="recognizeProduct()" disabled>
+                            <span id="ai-btn-text">🤖 AI 智能识别</span>
+                        </button>
+                        <div style="text-align: center; margin-top: 12px;">
+                            <a href="javascript:void(0)" onclick="recognizeProduct(true)"
+                                style="color: #667eea; font-size: 13px; text-decoration: none;">💡
+                                环境受限？点此尝试【模拟识别演示】测试下载流程</a>
+                        </div>
+                        <div id="ai-result" class="ai-result" style="display: none;">
+                            <div class="ai-result-label">💡 AI 建议名称：</div>
+                            <input type="text" id="product-name" class="name-input" oninput="updatePreview()">
+                            <div class="ai-result-label" style="margin-top: 30px;">
+                                <span>📜 专业直播话术（合规版）：</span>
+                                <button class="copy-btn" onclick="copyScript()">📋 复制话术</button>
+                            </div>
+                            <div id="live-script" class="live-script-box">识别中...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-title"><span class="step-number">3</span>输入编号</div>
+                    <div class="id-input-group">
+                        <span class="id-prefix">LF</span>
+                        <input type="text" id="product-id" class="id-input" placeholder="001" maxlength="3"
+                            oninput="handleIdInput(this)" onchange="updatePreview()">
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-title"><span class="step-number">4</span>打包下载</div>
+                    <div class="preview-section">
+                        <div class="preview-title">✅ 重命名预览：</div>
+                        <ul id="preview-list">
+                            <li class="preview-item" style="border:none;box-shadow:none;color:#999;">请先识别...</li>
+                        </ul>
+                    </div>
+                    <div class="download-section">
+                        <button class="download-btn primary" id="download-all-btn" onclick="downloadAll()" disabled>📦
+                            打包下载
+                            ZIP (图片 + 话术)</button>
+                        <button class="download-btn secondary" onclick="resetForm()">🔄 继续处理下一件</button>
+                    </div>
+                </div>
+            </div>
+
+            <footer style="text-align: center; padding: 40px 20px; color: var(--text-light); font-size: 14px;">
+                <p>© 2026 Franco Yixuan · <a href="https://github.com/YixuanFranco"
+                        style="color: var(--accent-color); text-decoration: none;">GitHub</a></p>
+                <p style="margin-top: 8px; opacity: 0.7;">🏺 AI powered by Doubao · Built with Passion</p>
+            </footer>
+        </div>
+
+        <script>
+            const state = {
+                files: [null, null, null, null, null],
+                labels: ['正面', '背面', '底部', '克重', '长度'],
+                productName: '',
+                productId: '001',
+                lastId: 0,
+                liveScript: ''
+            };
+
+            function init() {
+                const savedId = localStorage.getItem('lastProductId');
+                if (savedId) { state.lastId = parseInt(savedId); }
+                const nextId = (state.lastId + 1).toString().padStart(3, '0');
+                document.getElementById('product-id').value = nextId;
+                state.productId = nextId;
+
+                // 加载已保存的配置
+                const savedKey = localStorage.getItem('doubao_api_key');
+                const savedEid = localStorage.getItem('doubao_endpoint_id');
+                if (savedKey) document.getElementById('api-key').value = savedKey;
+                if (savedEid) document.getElementById('endpoint-id').value = savedEid;
+
+                // 环境检查
+                if (location.protocol === 'file:') {
+                    const warning = document.getElementById('browser-warning');
+                    warning.innerHTML = '⚠️ <b>本地运行提示：</b> 检测到您直接打开了 HTML 文件。出于安全限制，直接调用 API 可能会失败 (Failed to fetch)。<br>建议：使用 VS Code 的 Live Server 插件打开，或在 API 报错时选择“模拟演示”。';
+                    warning.style.display = 'block';
+                }
+            }
+
+            function toggleConfig() {
+                const panel = document.getElementById('config-panel');
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            function handleFileSelect(index, file) {
+                if (!file) return;
+                state.files[index] = file;
+                const box = document.getElementById(`box-${index}`);
+                box.classList.add('has-image');
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    box.innerHTML = `<input type="file" id="file-${index}" accept="image/*" onchange="handleFileSelect(${index}, this.files[0])">
+                    <img src="${e.target.result}" class="upload-preview">
+                    <div class="upload-label">${state.labels[index]}</div>
+                    <div class="status-badge">✓</div>`;
+                };
+                reader.readAsDataURL(file);
+                checkAIButtonState();
+            }
+
+            function checkAIButtonState() {
+                document.getElementById('ai-btn').disabled = !(state.files[0] && state.files[1] && state.files[2]);
+            }
+
+            async function recognizeProduct(isDemo = false) {
+                const btn = document.getElementById('ai-btn');
+                const btnText = document.getElementById('ai-btn-text');
+                const apiKey = document.getElementById('api-key').value.trim();
+                const eid = document.getElementById('endpoint-id').value.trim();
+
+                if (!isDemo && (!apiKey || !eid)) {
+                    alert('请先在【API 配置】中输入您的 API Key 和 推理接入点 ID');
+                    toggleConfig();
+                    return;
+                }
+
+                btn.disabled = true;
+                btnText.innerHTML = '<div class="loading"></div> ' + (isDemo ? '模拟处理中...' : 'AI 智能识别中...');
+
+                try {
+                    let result;
+                    if (isDemo) {
+                        await new Promise(r => setTimeout(r, 1200));
+                        result = {
+                            productName: '老白铜鎏金绿度母像',
+                            liveScript: "【开场直击】：各位藏友，看看这皮壳，包浆浑厚， typical 藏家自藏货！\n\n【细节鉴赏】：开脸庄严，线条流畅，底款清晰，大开门的东西。\n\n【文脉价值】：绿度母象征慈悲，工艺精湛，是不可错过的收藏佳品。\n\n【催单闭环】：咱们藏家交流，支持7天无理由退换，结缘价走一个！"
+                        };
+                    } else {
+                        const imgs = await Promise.all([fileToBase64(state.files[0]), fileToBase64(state.files[1]), fileToBase64(state.files[2])]);
+                        result = await callDoubaoAPI(imgs);
+                    }
+                    document.getElementById('ai-result').style.display = 'block';
+                    document.getElementById('product-name').value = result.productName;
+                    document.getElementById('live-script').textContent = result.liveScript;
+                    state.productName = result.productName;
+                    state.liveScript = result.liveScript;
+                    updatePreview();
+                    btnText.textContent = isDemo ? '✓ 演示完成' : '✓ 识别完成';
+                    setTimeout(() => { btnText.textContent = '🤖 AI 智能识别'; btn.disabled = false; }, 2000);
+                } catch (e) {
+                    console.error(e);
+                    if (e.message === 'Failed to fetch' && location.protocol === 'file:') {
+                        if (confirm('识别失败：浏览器拦截了请求 (CORS)\n\n建议方法：\n1. 安装浏览器 [Allow CORS] 插件（最快）\n2. 使用本地开发工具 Live Server 运行\n\n是否进入【演示模式】继续测试 ZIP 打包下载流程？')) {
+                            recognizeProduct(true);
+                            return;
+                        }
+                    } else {
+                        alert('识别失败: ' + e.message);
+                    }
+                    btn.disabled = false;
+                    btnText.textContent = '❌ 重试';
+                }
+            }
+
+            async function callDoubaoAPI(images) {
+                const apiKey = document.getElementById('api-key').value.trim();
+                const eid = document.getElementById('endpoint-id').value.trim();
+                localStorage.setItem('doubao_api_key', apiKey);
+                localStorage.setItem('doubao_endpoint_id', eid);
+
+                const prompt = `你是一位顶级的鉴赏专家和主播。请识别这三张图片（正面、背面、底部）。
+            1. 商品命名（材质+题材+类型，要求精炼，不超过15字）。
+            2. 生成直播话术（口语化，包含细节鉴赏、文脉描述、合规的引导话术，必须提及\"支持7天无理由退换\"）。
+            请严格按照 JSON 返回：{"productName": "...", "liveScript": "..."}`;
+
+                const resp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: eid,
+                        messages: [{
+                            role: "user",
+                            content: [
+                                { type: "text", text: prompt },
+                                ...images.map(i => ({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${i}` } }))
+                            ]
+                        }],
+                        response_format: { type: "json_object" }
+                    })
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.error?.message || `API 服务不可用 (${resp.status})`);
+                }
+
+                const data = await resp.json();
+                try {
+                    const content = data.choices[0].message.content;
+                    // 增加一层清理逻辑以防 API 返回 Markdown 标记
+                    const cleanedContent = content.replace(/```json\n?/, '').replace(/```\n?$/, '').trim();
+                    return JSON.parse(cleanedContent);
+                } catch (e) {
+                    console.error("解析 JSON 失败:", data.choices[0].message.content);
+                    throw new Error("AI 返回数据格式异常，请重试。");
+                }
+            }
+
+            function fileToBase64(f) {
+                return new Promise((res, rej) => {
+                    const r = new FileReader();
+                    r.onload = () => res(r.result.split(',')[1]);
+                    r.onerror = rej;
+                    r.readAsDataURL(f);
+                });
+            }
+
+            function handleIdInput(i) {
+                i.value = i.value.replace(/\D/g, '').slice(-3);
+                state.productId = i.value.padStart(3, '0');
+            }
+
+            function updatePreview() {
+                const name = document.getElementById('product-name').value.trim();
+                const id = document.getElementById('product-id').value.padStart(3, '0');
+                const list = document.getElementById('preview-list');
+                let html = '';
+                state.files.forEach((f, idx) => {
+                    if (f) {
+                        const ext = f.name.split('.').pop();
+                        html += `<li class="preview-item">LF${id}-${name}-${state.labels[idx]}.${ext}</li>`;
+                    }
+                });
+                list.innerHTML = html || '<li class="preview-item">请先识别...</li>';
+                document.getElementById('download-all-btn').disabled = !name || !state.files[0];
+            }
+
+            function copyScript() {
+                navigator.clipboard.writeText(state.liveScript).then(() => {
+                    const b = document.querySelector('.copy-btn');
+                    b.textContent = '✓ 已复制';
+                    setTimeout(() => b.textContent = '📋 复制话术', 2000);
+                });
+            }
+
+            async function downloadAll() {
+                const name = document.getElementById('product-name').value;
+                const id = document.getElementById('product-id').value.padStart(3, '0');
+                const btn = document.getElementById('download-all-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<div class="loading"></div> 打包中...';
+                try {
+                    const zip = new JSZip();
+                    const folder = zip.folder(`LF${id}-${name}`);
+                    for (let i = 0; i < state.files.length; i++) {
+                        if (state.files[i]) {
+                            const ext = state.files[i].name.split('.').pop();
+                            folder.file(`LF${id}-${name}-${state.labels[i]}.${ext}`, await state.files[i].arrayBuffer());
+                        }
+                    }
+                    if (state.liveScript) folder.file(`LF${id}-${name}-直播话术.txt`, state.liveScript);
+                    const content = await zip.generateAsync({ type: "blob" });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(content);
+                    a.download = `LF${id}-${name}.zip`;
+                    a.click();
+                    localStorage.setItem('lastProductId', id);
+                } catch (e) { alert('打包失败'); }
+                btn.innerHTML = '📦 打包下载 ZIP (图片 + 话术)';
+                btn.disabled = false;
+            }
+
+            function resetForm() {
+                if (confirm('确认清空？')) location.reload();
+            }
+
+            function showHelp() {
+                alert("v2.0 终极版：\n- 基于 AI 的商品智能命名\n- 自动生成合规直播话术\n- 自动编号与 ZIP 批量下载\n- 适配 GitHub Pages 在线运行");
+            }
+
+            window.onload = init;
+        </script>
+</body>
+
+</html>
