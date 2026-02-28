@@ -798,19 +798,40 @@
                 }
 
                 const data = await resp.json();
+                console.log("API 返回解析成功:", data);
 
-                // 适配 /v3/responses 的返回结构 (通常数据在 choices[0].message.content)
-                // 注意：如果您的模型返回结构不同，请参考 console.log
-                console.log("API 返回原始数据:", data);
-                const content = data.choices?.[0]?.message?.content || "";
-                if (!content) throw new Error("AI 未能返回识别结果，请检查模型权限。");
+                let content = "";
+
+                // 路径 1: 标准 choices 结构
+                if (data.choices?.[0]?.message?.content) {
+                    content = data.choices[0].message.content;
+                }
+                // 路径 2: 官方最新 /v3/responses 结构 (data.output.message)
+                else if (data.output?.message?.content) {
+                    const msgContent = data.output.message.content;
+                    if (Array.isArray(msgContent)) {
+                        // 寻找文本类型的片段 (可能是 text 或 content)
+                        const textPart = msgContent.find(p => p.type === 'text' || p.text);
+                        content = textPart ? (textPart.text || textPart.content) : (msgContent[0]?.text || msgContent[0]?.content || "");
+                    } else if (typeof msgContent === 'string') {
+                        content = msgContent;
+                    }
+                }
+
+                if (!content) {
+                    console.error("无法找到内容字段，返回结构:", data);
+                    throw new Error("AI 返回结果为空，请检查模型权限或输入参数内容。");
+                }
 
                 try {
                     const cleanJson = content.replace(/```json\n?|\n?```/g, '').trim();
-                    return JSON.parse(cleanJson);
+                    const parsed = JSON.parse(cleanJson);
+                    state.liveScript = parsed.liveScript || content;
+                    return parsed;
                 } catch (e) {
+                    state.liveScript = content;
                     return {
-                        productName: "识别成功 (JSON解析略过)",
+                        productName: "识别成功",
                         liveScript: content
                     };
                 }
