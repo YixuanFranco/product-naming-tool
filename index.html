@@ -635,10 +635,11 @@
                         </ul>
                     </div>
                     <div class="download-section">
-                        <button class="download-btn primary" id="download-all-btn" onclick="downloadAll()" disabled>📦
+                        <button type="button" class="download-btn primary" id="download-all-btn" onclick="downloadAll()"
+                            disabled>📦
                             打包下载
                             ZIP (图片 + 话术)</button>
-                        <button class="download-btn secondary" onclick="resetForm()">🔄 继续处理下一件</button>
+                        <button type="button" class="download-btn secondary" onclick="resetForm()">🔄 继续处理下一件</button>
                     </div>
                 </div>
             </div>
@@ -741,16 +742,16 @@
                     updatePreview();
                     btnText.textContent = isDemo ? '✓ 演示完成' : '✓ 识别完成';
                     setTimeout(() => { btnText.textContent = '🤖 AI 智能识别'; btn.disabled = false; }, 2000);
-                    } catch (e) {
-                        console.error(e);
-                        if (e.message === 'Failed to fetch') {
-                            if (confirm('识别失败：浏览器跨域安全拦截 (CORS)\n\n建议解决方法：\n1. 安装 [Allow CORS] 插件（百度搜索或前往官网安装）\n2. 开启插件开关（变成红色图标）后刷新重试\n\n是否使用【模拟模式】体验 ZIP 下载流程？')) {
-                                recognizeProduct(true);
-                                return;
-                            }
-                        } else {
-                            alert('识别失败: ' + e.message);
+                } catch (e) {
+                    console.error("识别错误:", e);
+                    if (e.message === 'Failed to fetch') {
+                        if (confirm('识别失败：浏览器跨域安全拦截 (CORS)\n\n建议解决方法：\n1. 安装 [Allow CORS] 插件\n2. 开启插件开关（红色图标）后刷新重试\n\n是否使用【模拟模式】预览效果？')) {
+                            recognizeProduct(true);
+                            return;
                         }
+                    } else {
+                        alert('识别失败: ' + e.message);
+                    }
                     btn.disabled = false;
                     btnText.textContent = '❌ 重试';
                 }
@@ -841,30 +842,53 @@
             }
 
             async function downloadAll() {
-                const name = document.getElementById('product-name').value;
+                const rawName = document.getElementById('product-name').value || '未命名商品';
+                const name = rawName.replace(/[\\/:*?"<>|]/g, '_').trim(); // 过滤非法字符
                 const id = document.getElementById('product-id').value.padStart(3, '0');
                 const btn = document.getElementById('download-all-btn');
+
                 btn.disabled = true;
                 btn.innerHTML = '<div class="loading"></div> 打包中...';
+
                 try {
                     const zip = new JSZip();
-                    const folder = zip.folder(`LF${id}-${name}`);
+                    const folderName = `LF${id}-${name}`;
+                    const folder = zip.folder(folderName);
+
                     for (let i = 0; i < state.files.length; i++) {
                         if (state.files[i]) {
-                            const ext = state.files[i].name.split('.').pop();
-                            folder.file(`LF${id}-${name}-${state.labels[i]}.${ext}`, await state.files[i].arrayBuffer());
+                            const ext = state.files[i].name.split('.').pop() || 'jpg';
+                            const fileName = `LF${id}-${name}-${state.labels[i]}.${ext}`;
+                            folder.file(fileName, await state.files[i].arrayBuffer());
                         }
                     }
-                    if (state.liveScript) folder.file(`LF${id}-${name}-直播话术.txt`, state.liveScript);
+
+                    if (state.liveScript) {
+                        folder.file(`LF${id}-${name}-直播话术.txt`, state.liveScript);
+                    }
+
                     const content = await zip.generateAsync({ type: "blob" });
+                    const url = URL.createObjectURL(content);
                     const a = document.createElement('a');
-                    a.href = URL.createObjectURL(content);
-                    a.download = `LF${id}-${name}.zip`;
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `${folderName}.zip`;
+                    document.body.appendChild(a);
                     a.click();
+
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+
                     localStorage.setItem('lastProductId', id);
-                } catch (e) { alert('打包失败'); }
-                btn.innerHTML = '📦 打包下载 ZIP (图片 + 话术)';
-                btn.disabled = false;
+                } catch (e) {
+                    console.error("打包失败细节:", e);
+                    alert('打包下载失败，请检查图片是否已正常上传');
+                } finally {
+                    btn.innerHTML = '📦 打包下载 ZIP (图片 + 话术)';
+                    btn.disabled = false;
+                }
             }
 
             function resetForm() {
