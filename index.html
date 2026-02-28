@@ -773,9 +773,7 @@
                                 },
                                 ...images.map(img => ({
                                     type: "input_image",
-                                    image_url: {
-                                        url: `data:image/jpeg;base64,${img}`
-                                    }
+                                    image_url: `data:image/jpeg;base64,${img}`
                                 }))
                             ]
                         }
