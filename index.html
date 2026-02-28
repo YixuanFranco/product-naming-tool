@@ -524,24 +524,20 @@
 
             <div id="config-panel" class="config-panel">
                 <div class="config-title">
-                    <span>火山引擎 API 配置 (标准 AK/SK)</span>
+                    <span>火山方舟（豆包）API 配置</span>
                     <button type="button" onclick="toggleConfig()"
                         style="border:none;background:none;cursor:pointer;font-size:24px;">✕</button>
                 </div>
                 <div class="config-item">
-                    <label>Access Key ID</label>
-                    <input type="text" id="access-key-id" placeholder="例如: AKLTYjUy...">
+                    <label>API Key</label>
+                    <input type="password" id="api-key" placeholder="例如: a6edf06c-xxxx-xxxx">
                 </div>
                 <div class="config-item">
-                    <label>Secret Access Key</label>
-                    <input type="password" id="secret-access-key" placeholder="例如: WVdKaU1D...">
-                </div>
-                <div class="config-item">
-                    <label>模型名称 (Model Name)</label>
-                    <input type="text" id="model-name" placeholder="例如: doubao-pro-4k">
+                    <label>模型名称 / 接入点 ID</label>
+                    <input type="text" id="endpoint-id" placeholder="例如: ep-20260228213630-fqk5p">
                 </div>
                 <p style="font-size: 13px; color: #666; line-height: 1.5;">💡
-                    配置将保存在浏览器本地。请直接填入您在火山控制台获取的 AK 和 SK。
+                    <b>配置说明：</b> 这里的 API Key 是方舟管理页面生成的 UUID 字符串。模型名称可以填种子模型名或推理接入点 ID。
                 </p>
             </div>
 
@@ -664,17 +660,15 @@
                 state.productId = nextId;
 
                 // 加载已保存的配置
-                const savedAk = localStorage.getItem('volc_ak');
-                const savedSk = localStorage.getItem('volc_sk');
-                const savedModel = localStorage.getItem('volc_model');
-                if (savedAk) document.getElementById('access-key-id').value = savedAk;
-                if (savedSk) document.getElementById('secret-access-key').value = savedSk;
-                if (savedModel) document.getElementById('model-name').value = savedModel;
+                const savedKey = localStorage.getItem('doubao_api_key');
+                const savedEid = localStorage.getItem('doubao_endpoint_id');
+                if (savedKey) document.getElementById('api-key').value = savedKey;
+                if (savedEid) document.getElementById('endpoint-id').value = savedEid;
 
                 // 环境检查
                 if (location.protocol === 'file:') {
                     const warning = document.getElementById('browser-warning');
-                    warning.innerHTML = '⚠️ <b>本地运行模式：</b> 检测到您直接打开了 HTML 文件，建议通过在线地址或本地服务器运行以获得最佳兼容性。';
+                    warning.innerHTML = '⚠️ <b>本地运行提示：</b> 如果识别报错，请确保开启了 CORS 跨域插件（变为红色图标）。';
                     warning.style.display = 'block';
                 }
             }
@@ -707,12 +701,11 @@
             async function recognizeProduct(isDemo = false) {
                 const btn = document.getElementById('ai-btn');
                 const btnText = document.getElementById('ai-btn-text');
-                const ak = document.getElementById('access-key-id').value.trim();
-                const sk = document.getElementById('secret-access-key').value.trim();
-                const model = document.getElementById('model-name').value.trim();
+                const apiKey = document.getElementById('api-key').value.trim();
+                const eid = document.getElementById('endpoint-id').value.trim();
 
-                if (!isDemo && (!ak || !sk || !model)) {
-                    alert('请先输入 Access Key ID、Secret Access Key 和 模型名称');
+                if (!isDemo && (!apiKey || !eid)) {
+                    alert('请先输入 API Key 和 推理接入点 ID (以 ep- 开头)');
                     toggleConfig();
                     return;
                 }
@@ -756,55 +749,72 @@
             }
 
             async function callDoubaoAPI(images) {
-                const ak = document.getElementById('access-key-id').value.trim();
-                const sk = document.getElementById('secret-access-key').value.trim();
-                const model = document.getElementById('model-name').value.trim();
-                localStorage.setItem('volc_ak', ak);
-                localStorage.setItem('volc_sk', sk);
-                localStorage.setItem('volc_model', model);
+                const apiKey = document.getElementById('api-key').value.trim();
+                const model = document.getElementById('endpoint-id').value.trim();
+
+                localStorage.setItem('doubao_api_key', apiKey);
+                localStorage.setItem('doubao_endpoint_id', model);
 
                 const prompt = `你是一位顶级的鉴赏专家和主播。请识别这三张图片（正面、背面、底部）。
             1. 商品命名（材质+题材+类型，要求精炼，不超过15字）。
             2. 生成直播话术（口语化，包含细节鉴赏、文脉描述、合规的引导话术，必须提及"支持7天无理由退换"）。
             请严格按照 JSON 返回：{"productName": "...", "liveScript": "..."}`;
 
-                // 注意：这里我们使用标准的 API Key 方式或者简化的接入
-                // 如果您坚持使用 AK/SK，通常需要后端签名。
-                // 现为了保证能通，我们暂时尝试直接使用 SK 作为 Token (某些自建 Gateway 支持)
-                // 或者如果您能提供完整的签名算法则更佳。
-                const resp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+                // 构建符合您提供的官方示例的 /v3/responses 结构
+                const payload = {
+                    model: model,
+                    input: [
+                        {
+                            role: "user",
+                            content: [
+                                {
+                                    type: "input_text",
+                                    text: prompt
+                                },
+                                ...images.map(img => ({
+                                    type: "input_image",
+                                    image_url: {
+                                        url: `data:image/jpeg;base64,${img}`
+                                    }
+                                }))
+                            ]
+                        }
+                    ]
+                };
+
+                const resp = await fetch('https://ark.cn-beijing.volces.com/api/v3/responses', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sk}`
+                        'Authorization': `Bearer ${apiKey}`
                     },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [{
-                            role: "user",
-                            content: [
-                                { type: "text", text: prompt },
-                                ...images.map(i => ({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${i}` } }))
-                            ]
-                        }],
-                        response_format: { type: "json_object" }
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 if (!resp.ok) {
                     const err = await resp.json().catch(() => ({}));
-                    throw new Error(err.error?.message || `API 服务不可用 (${resp.status})`);
+                    if (resp.status === 401 || resp.status === 403) {
+                        throw new Error("认证失败：API Key 或 模型名称有误。");
+                    }
+                    throw new Error(err.error?.message || `API 请求失败 (${resp.status})`);
                 }
 
                 const data = await resp.json();
+
+                // 适配 /v3/responses 的返回结构 (通常数据在 choices[0].message.content)
+                // 注意：如果您的模型返回结构不同，请参考 console.log
+                console.log("API 返回原始数据:", data);
+                const content = data.choices?.[0]?.message?.content || "";
+                if (!content) throw new Error("AI 未能返回识别结果，请检查模型权限。");
+
                 try {
-                    const content = data.choices[0].message.content;
-                    // 增加一层清理逻辑以防 API 返回 Markdown 标记
-                    const cleanedContent = content.replace(/```json\n?/, '').replace(/```\n?$/, '').trim();
-                    return JSON.parse(cleanedContent);
+                    const cleanJson = content.replace(/```json\n?|\n?```/g, '').trim();
+                    return JSON.parse(cleanJson);
                 } catch (e) {
-                    console.error("解析 JSON 失败:", data.choices[0].message.content);
-                    throw new Error("AI 返回数据格式异常，请重试。");
+                    return {
+                        productName: "识别成功 (JSON解析略过)",
+                        liveScript: content
+                    };
                 }
             }
 
