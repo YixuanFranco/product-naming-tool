@@ -544,7 +544,9 @@
                     <input type="text" id="endpoint-id" placeholder="例如: ep-2024xxxxxx-xxxxx">
                 </div>
                 <p style="font-size: 13px; color: #666; line-height: 1.5;">💡
-                    配置将保存在浏览器本地。若识别失败，通常是由于浏览器跨域拦截（CORS），建议通过本地服务器运行或安装 CORS 插件。
+                    配置将保存在浏览器本地。若识别显示失败，通常是由于跨域安全拦截 (CORS)。<br>建议：<a
+                        href="https://chromewebstore.google.com/detail/lhobafceponkjdbicbagajakpgihpdid" target="_blank"
+                        style="color: #667eea; font-weight: 500;">点此安装并开启 CORS 插件</a> 以解除限制。
                 </p>
             </div>
 
@@ -674,7 +676,7 @@
                 // 环境检查
                 if (location.protocol === 'file:') {
                     const warning = document.getElementById('browser-warning');
-                    warning.innerHTML = '⚠️ <b>本地运行提示：</b> 检测到您直接打开了 HTML 文件。出于安全限制，直接调用 API 可能会失败 (Failed to fetch)。<br>建议：使用 VS Code 的 Live Server 插件打开，或在 API 报错时选择“模拟演示”。';
+                    warning.innerHTML = '⚠️ <b>本地运行模式：</b> 检测到您直接打开了 HTML 文件，AI 识别可能会失败。建议通过本地服务器运行，或 <a href="https://chromewebstore.google.com/detail/lhobafceponkjdbicbagajakpgihpdid" target="_blank" style="color: #ff4d4f; font-weight: 600;">点此安装并开启 CORS 插件</a> 来修复。';
                     warning.style.display = 'block';
                 }
             }
@@ -739,16 +741,16 @@
                     updatePreview();
                     btnText.textContent = isDemo ? '✓ 演示完成' : '✓ 识别完成';
                     setTimeout(() => { btnText.textContent = '🤖 AI 智能识别'; btn.disabled = false; }, 2000);
-                } catch (e) {
-                    console.error(e);
-                    if (e.message === 'Failed to fetch' && location.protocol === 'file:') {
-                        if (confirm('识别失败：浏览器拦截了请求 (CORS)\n\n建议方法：\n1. 安装浏览器 [Allow CORS] 插件（最快）\n2. 使用本地开发工具 Live Server 运行\n\n是否进入【演示模式】继续测试 ZIP 打包下载流程？')) {
-                            recognizeProduct(true);
-                            return;
+                    } catch (e) {
+                        console.error(e);
+                        if (e.message === 'Failed to fetch') {
+                            if (confirm('识别失败：浏览器跨域安全拦截 (CORS)\n\n建议解决方法：\n1. 安装 [Allow CORS] 插件（百度搜索或前往官网安装）\n2. 开启插件开关（变成红色图标）后刷新重试\n\n是否使用【模拟模式】体验 ZIP 下载流程？')) {
+                                recognizeProduct(true);
+                                return;
+                            }
+                        } else {
+                            alert('识别失败: ' + e.message);
                         }
-                    } else {
-                        alert('识别失败: ' + e.message);
-                    }
                     btn.disabled = false;
                     btnText.textContent = '❌ 重试';
                 }
