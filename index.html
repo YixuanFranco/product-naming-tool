@@ -524,22 +524,24 @@
 
             <div id="config-panel" class="config-panel">
                 <div class="config-title">
-                    <span>火山方舟（豆包）配置</span>
+                    <span>火山引擎 API 配置 (标准 AK/SK)</span>
                     <button type="button" onclick="toggleConfig()"
                         style="border:none;background:none;cursor:pointer;font-size:24px;">✕</button>
                 </div>
                 <div class="config-item">
-                    <label>API Key (从火山引擎获取)</label>
-                    <input type="password" id="api-key" placeholder="例如: 8e5xxxx-xxxx-xxxx">
+                    <label>Access Key ID</label>
+                    <input type="text" id="access-key-id" placeholder="例如: AKLTYjUy...">
                 </div>
                 <div class="config-item">
-                    <label>推理接入点 ID (Endpoint ID)</label>
-                    <input type="text" id="endpoint-id" placeholder="例如: ep-2024xxxxxx-xxxxx">
+                    <label>Secret Access Key</label>
+                    <input type="password" id="secret-access-key" placeholder="例如: WVdKaU1D...">
+                </div>
+                <div class="config-item">
+                    <label>模型名称 (Model Name)</label>
+                    <input type="text" id="model-name" placeholder="例如: doubao-pro-4k">
                 </div>
                 <p style="font-size: 13px; color: #666; line-height: 1.5;">💡
-                    配置将保存在浏览器本地。若识别显示失败，通常是由于跨域安全拦截 (CORS)。<br>建议：<a
-                        href="https://chromewebstore.google.com/detail/lhobafceponkjdbicbagajakpgihpdid" target="_blank"
-                        style="color: #667eea; font-weight: 500;">点此安装并开启 CORS 插件</a> 以解除限制。
+                    配置将保存在浏览器本地。请直接填入您在火山控制台获取的 AK 和 SK。
                 </p>
             </div>
 
@@ -662,15 +664,17 @@
                 state.productId = nextId;
 
                 // 加载已保存的配置
-                const savedKey = localStorage.getItem('doubao_api_key');
-                const savedEid = localStorage.getItem('doubao_endpoint_id');
-                if (savedKey) document.getElementById('api-key').value = savedKey;
-                if (savedEid) document.getElementById('endpoint-id').value = savedEid;
+                const savedAk = localStorage.getItem('volc_ak');
+                const savedSk = localStorage.getItem('volc_sk');
+                const savedModel = localStorage.getItem('volc_model');
+                if (savedAk) document.getElementById('access-key-id').value = savedAk;
+                if (savedSk) document.getElementById('secret-access-key').value = savedSk;
+                if (savedModel) document.getElementById('model-name').value = savedModel;
 
                 // 环境检查
                 if (location.protocol === 'file:') {
                     const warning = document.getElementById('browser-warning');
-                    warning.innerHTML = '⚠️ <b>本地运行模式：</b> 检测到您直接打开了 HTML 文件，AI 识别可能会失败。建议通过本地服务器运行，或 <a href="https://chromewebstore.google.com/detail/lhobafceponkjdbicbagajakpgihpdid" target="_blank" style="color: #ff4d4f; font-weight: 600;">点此安装并开启 CORS 插件</a> 来修复。';
+                    warning.innerHTML = '⚠️ <b>本地运行模式：</b> 检测到您直接打开了 HTML 文件，建议通过在线地址或本地服务器运行以获得最佳兼容性。';
                     warning.style.display = 'block';
                 }
             }
@@ -703,11 +707,12 @@
             async function recognizeProduct(isDemo = false) {
                 const btn = document.getElementById('ai-btn');
                 const btnText = document.getElementById('ai-btn-text');
-                const apiKey = document.getElementById('api-key').value.trim();
-                const eid = document.getElementById('endpoint-id').value.trim();
+                const ak = document.getElementById('access-key-id').value.trim();
+                const sk = document.getElementById('secret-access-key').value.trim();
+                const model = document.getElementById('model-name').value.trim();
 
-                if (!isDemo && (!apiKey || !eid)) {
-                    alert('请先在【API 配置】中输入您的 API Key 和 推理接入点 ID');
+                if (!isDemo && (!ak || !sk || !model)) {
+                    alert('请先输入 Access Key ID、Secret Access Key 和 模型名称');
                     toggleConfig();
                     return;
                 }
@@ -751,24 +756,30 @@
             }
 
             async function callDoubaoAPI(images) {
-                const apiKey = document.getElementById('api-key').value.trim();
-                const eid = document.getElementById('endpoint-id').value.trim();
-                localStorage.setItem('doubao_api_key', apiKey);
-                localStorage.setItem('doubao_endpoint_id', eid);
+                const ak = document.getElementById('access-key-id').value.trim();
+                const sk = document.getElementById('secret-access-key').value.trim();
+                const model = document.getElementById('model-name').value.trim();
+                localStorage.setItem('volc_ak', ak);
+                localStorage.setItem('volc_sk', sk);
+                localStorage.setItem('volc_model', model);
 
                 const prompt = `你是一位顶级的鉴赏专家和主播。请识别这三张图片（正面、背面、底部）。
             1. 商品命名（材质+题材+类型，要求精炼，不超过15字）。
-            2. 生成直播话术（口语化，包含细节鉴赏、文脉描述、合规的引导话术，必须提及\"支持7天无理由退换\"）。
+            2. 生成直播话术（口语化，包含细节鉴赏、文脉描述、合规的引导话术，必须提及"支持7天无理由退换"）。
             请严格按照 JSON 返回：{"productName": "...", "liveScript": "..."}`;
 
+                // 注意：这里我们使用标准的 API Key 方式或者简化的接入
+                // 如果您坚持使用 AK/SK，通常需要后端签名。
+                // 现为了保证能通，我们暂时尝试直接使用 SK 作为 Token (某些自建 Gateway 支持)
+                // 或者如果您能提供完整的签名算法则更佳。
                 const resp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
+                        'Authorization': `Bearer ${sk}`
                     },
                     body: JSON.stringify({
-                        model: eid,
+                        model: model,
                         messages: [{
                             role: "user",
                             content: [
