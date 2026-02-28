@@ -40,13 +40,6 @@
             padding: 40px 20px;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
         .container {
             max-width: 1000px;
             margin: 0 auto;
@@ -523,16 +516,16 @@
     <div class="main-wrapper">
         <div class="container">
             <div class="header">
-                <button class="help-btn" onclick="showHelp()">?</button>
+                <button type="button" class="help-btn" onclick="showHelp()">?</button>
                 <h1>🏺 商品拍照命名助手 v2.0</h1>
                 <p>AI智能识别，一键生成重命名方案与直播脚本</p>
-                <button class="btn-toggle-config" onclick="toggleConfig()">⚙️ API 配置</button>
+                <button type="button" class="btn-toggle-config" onclick="toggleConfig()">⚙️ API 配置</button>
             </div>
 
             <div id="config-panel" class="config-panel">
                 <div class="config-title">
                     <span>火山方舟（豆包）配置</span>
-                    <button onclick="toggleConfig()"
+                    <button type="button" onclick="toggleConfig()"
                         style="border:none;background:none;cursor:pointer;font-size:24px;">✕</button>
                 </div>
                 <div class="config-item">
@@ -597,7 +590,7 @@
                     <div class="step-title"><span class="step-number">2</span>AI 智能识别</div>
                     <div class="ai-section">
                         <div id="browser-warning" class="browser-warning"></div>
-                        <button class="ai-button" id="ai-btn" onclick="recognizeProduct()" disabled>
+                        <button type="button" class="ai-button" id="ai-btn" onclick="recognizeProduct()" disabled>
                             <span id="ai-btn-text">🤖 AI 智能识别</span>
                         </button>
                         <div style="text-align: center; margin-top: 12px;">
@@ -610,7 +603,7 @@
                             <input type="text" id="product-name" class="name-input" oninput="updatePreview()">
                             <div class="ai-result-label" style="margin-top: 30px;">
                                 <span>📜 专业直播话术（合规版）：</span>
-                                <button class="copy-btn" onclick="copyScript()">📋 复制话术</button>
+                                <button type="button" class="copy-btn" onclick="copyScript()">📋 复制话术</button>
                             </div>
                             <div id="live-script" class="live-script-box">识别中...</div>
                         </div>
@@ -842,8 +835,13 @@
             }
 
             async function downloadAll() {
+                if (typeof JSZip === 'undefined') {
+                    alert('JSZip 库尚未加载完成，请检查网络连接或刷新页面。');
+                    return;
+                }
+
                 const rawName = document.getElementById('product-name').value || '未命名商品';
-                const name = rawName.replace(/[\\/:*?"<>|]/g, '_').trim(); // 过滤非法字符
+                const name = rawName.replace(/[\\/:*?"<>|]/g, '_').trim();
                 const id = document.getElementById('product-id').value.padStart(3, '0');
                 const btn = document.getElementById('download-all-btn');
 
@@ -855,12 +853,21 @@
                     const folderName = `LF${id}-${name}`;
                     const folder = zip.folder(folderName);
 
+                    let hasFiles = false;
                     for (let i = 0; i < state.files.length; i++) {
                         if (state.files[i]) {
                             const ext = state.files[i].name.split('.').pop() || 'jpg';
                             const fileName = `LF${id}-${name}-${state.labels[i]}.${ext}`;
                             folder.file(fileName, await state.files[i].arrayBuffer());
+                            hasFiles = true;
                         }
+                    }
+
+                    if (!hasFiles) {
+                        alert('请先上传图片后再下载！');
+                        btn.disabled = false;
+                        btn.innerHTML = '📦 打包下载 ZIP (图片 + 话术)';
+                        return;
                     }
 
                     if (state.liveScript) {
@@ -879,12 +886,13 @@
                     setTimeout(() => {
                         document.body.removeChild(a);
                         URL.revokeObjectURL(url);
-                    }, 100);
+                    }, 200);
 
                     localStorage.setItem('lastProductId', id);
+                    alert('下载已启动，请查看浏览器下载记录。');
                 } catch (e) {
-                    console.error("打包失败细节:", e);
-                    alert('打包下载失败，请检查图片是否已正常上传');
+                    console.error("打包错误:", e);
+                    alert('打包下载过程中出现错误，请重试。');
                 } finally {
                     btn.innerHTML = '📦 打包下载 ZIP (图片 + 话术)';
                     btn.disabled = false;
