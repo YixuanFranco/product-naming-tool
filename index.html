@@ -798,29 +798,39 @@
                 }
 
                 const data = await resp.json();
-                console.log("API 返回解析成功:", data);
+                console.log("服务器返回原始数据:", data);
 
-                let content = "";
+                // 万能解析器：递归寻找任何包含有效对话内容的字符串
+                function extractContent(obj) {
+                    if (!obj || typeof obj !== 'object') return null;
 
-                // 路径 1: 标准 choices 结构
-                if (data.choices?.[0]?.message?.content) {
-                    content = data.choices[0].message.content;
-                }
-                // 路径 2: 官方最新 /v3/responses 结构 (data.output.message)
-                else if (data.output?.message?.content) {
-                    const msgContent = data.output.message.content;
-                    if (Array.isArray(msgContent)) {
-                        // 寻找文本类型的片段 (可能是 text 或 content)
-                        const textPart = msgContent.find(p => p.type === 'text' || p.text);
-                        content = textPart ? (textPart.text || textPart.content) : (msgContent[0]?.text || msgContent[0]?.content || "");
-                    } else if (typeof msgContent === 'string') {
-                        content = msgContent;
+                    // 优先级 1: 官方推荐路径
+                    const standard = obj.choices?.[0]?.message?.content || obj.output?.message?.content;
+                    if (typeof standard === 'string' && standard.length > 0) return standard;
+                    if (Array.isArray(standard)) {
+                        const textPart = standard.find(p => p.type === 'text' || p.text);
+                        if (textPart) return textPart.text || textPart.content;
                     }
+
+                    // 优先级 2: 深度遍历探测
+                    for (const key in obj) {
+                        const value = obj[key];
+                        if (typeof value === 'string' && (key === 'content' || key === 'text') && value.length > 10) {
+                            return value;
+                        }
+                        if (value && typeof value === 'object') {
+                            const result = extractContent(value);
+                            if (result) return result;
+                        }
+                    }
+                    return null;
                 }
+
+                const content = extractContent(data);
 
                 if (!content) {
-                    console.error("无法找到内容字段，返回结构:", data);
-                    throw new Error("AI 返回结果为空，请检查模型权限或输入参数内容。");
+                    console.error("未能解析结果结构:", data);
+                    throw new Error("AI 响应成功但未找到文本。结构已打印在控制台，请检查模型是否支持视觉识别。");
                 }
 
                 try {
