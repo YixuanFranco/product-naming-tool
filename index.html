@@ -834,14 +834,41 @@
                 }
 
                 try {
-                    const cleanJson = content.replace(/```json\n?|\n?```/g, '').trim();
-                    const parsed = JSON.parse(cleanJson);
-                    state.liveScript = parsed.liveScript || content;
-                    return parsed;
+                    // 1. 尝试从文本中寻找 JSON 结构 (从第一个 { 到最后一个 })
+                    const jsonMatch = content.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        const parsed = JSON.parse(jsonMatch[0]);
+                        // 处理字段名可能不一致的情况
+                        const productName = parsed.productName || parsed.name || parsed.title || "";
+                        const liveScript = parsed.liveScript || parsed.script || parsed.content || content;
+                        
+                        if (productName && liveScript) {
+                            state.liveScript = liveScript;
+                            return { productName, liveScript };
+                        }
+                    }
+                    
+                    // 2. 如果没找到 JSON 或字段不对，进行内容清洗
+                    const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    let name = lines[0] || "未命名商品";
+                    let script = content;
+
+                    // 尝试移除常见的 AI 前缀
+                    name = name.replace(/^(商品名称|建议名称|名称|识别结果|productName|title)[:：\s]+/i, '');
+                    // 如果第一行太长，截断它
+                    if (name.length > 20) name = name.substring(0, 15);
+
+                    state.liveScript = script;
+                    return {
+                        productName: name,
+                        liveScript: script
+                    };
                 } catch (e) {
+                    console.warn("解析 AI 响应失败，使用兜底逻辑:", e);
+                    const firstLine = content.split('\n')[0].substring(0, 15);
                     state.liveScript = content;
                     return {
-                        productName: "识别成功",
+                        productName: firstLine || "未识别成功",
                         liveScript: content
                     };
                 }
